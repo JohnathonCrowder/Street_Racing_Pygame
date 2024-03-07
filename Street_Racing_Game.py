@@ -4,7 +4,6 @@ import random
 
 import pygame.mask
 
-
 # Initialize Pygame
 pygame.init()
 
@@ -18,20 +17,20 @@ player_image = pygame.image.load(r"C:\Users\Admin\Pictures\txt\949d4355bc8d5d366
 player_image = pygame.transform.scale(player_image, (player_image.get_width() // 2.9, player_image.get_height() // 2.9))
 player_mask = pygame.mask.from_surface(player_image)
 
-# Shrink the player character image by 50%
-#player_image = pygame.transform.scale(player_image, (player_image.get_width() // 2.9, player_image.get_height() // 2.9))
+# Load the first NPC character image
+npc1_image = pygame.image.load(r"C:\Users\Admin\Pictures\txt\Transparent\top-car-view-png-34868_transparent.png")
+npc1_image = pygame.transform.scale(npc1_image, (npc1_image.get_width() // 2, npc1_image.get_height() // 2))
+npc1_mask = pygame.mask.from_surface(npc1_image)
 
-# Load the NPC character image
-npc_image = pygame.image.load(r"C:\Users\Admin\Pictures\txt\Transparent\top-car-view-png-34868_transparent.png")
-
-# Shrink the NPC character image by 50%
-npc_image = pygame.transform.scale(npc_image, (npc_image.get_width() // 2, npc_image.get_height() // 2))
-npc_mask = pygame.mask.from_surface(npc_image)
-
+# Load the second NPC character image
+npc2_image = pygame.image.load(r"C:\Users\Admin\Pictures\txt\Transparent\top-car-view-png-34871_transparent.png")
+npc2_image = pygame.transform.scale(npc2_image, (npc2_image.get_width() // 2, npc2_image.get_height() // 2))
+npc2_mask = pygame.mask.from_surface(npc2_image)
 
 # Get the character's width and height
 player_width, player_height = player_image.get_size()
-npc_width, npc_height = npc_image.get_size()
+npc1_width, npc1_height = npc1_image.get_size()
+npc2_width, npc2_height = npc2_image.get_size()
 
 # Set the player's initial position
 player_x = WINDOW_SIZE[0] // 2 - player_width // 2
@@ -40,10 +39,14 @@ player_y = WINDOW_SIZE[1] // 2 - player_height // 2
 # Set the player's initial rotation
 player_rotation = 0
 
-# Set the NPC's initial position and speed
-npc_x = WINDOW_SIZE[0] // 2 - npc_width // 2
-npc_y = -npc_height  # Start above the screen
-npc_speed = 2
+# Set the NPCs' initial positions and speeds
+npc1_x = WINDOW_SIZE[0] // 2 - npc1_width // 2
+npc1_y = -npc1_height
+npc1_speed = 2
+
+npc2_x = WINDOW_SIZE[0] // 2 - npc2_width // 2
+npc2_y = -npc2_height
+npc2_speed = 2
 
 # Set the player's speed
 player_speed = 5
@@ -57,25 +60,24 @@ joystick = pygame.joystick.Joystick(0)
 joystick.init()
 
 # Define the lane positions
-left_lane_x = WINDOW_SIZE[0] // 4 - npc_width // 2
-middle_lane_x = WINDOW_SIZE[0] // 2 - npc_width // 2
-right_lane_x = 3 * WINDOW_SIZE[0] // 4 - npc_width // 2
+left_lane_x = WINDOW_SIZE[0] // 4 - npc1_width // 2
+middle_lane_x = WINDOW_SIZE[0] // 2 - npc1_width // 2
+right_lane_x = 3 * WINDOW_SIZE[0] // 4 - npc1_width // 2
 
 # Define the line colors
 line_color = (255, 255, 255)  # White color
 
-# Define the possible wrap positions for the NPC
+# Define the possible wrap positions for the NPCs
 wrap_positions = [left_lane_x, middle_lane_x, right_lane_x]
 
-# Set the rate at which the NPC slows down when the left trigger is pressed
+# Set the rate at which the NPCs slow down when the left trigger is pressed
 slow_down_rate = 0.05
 
-# Set the rate at which the NPC speeds up when the right trigger is pressed
+# Set the rate at which the NPCs speed up when the right trigger is pressed
 speed_up_rate = 0.007
 
-# Set the maximum speed for the NPC
+# Set the maximum speed for the NPCs
 max_speed = 9
-
 
 
 
@@ -120,30 +122,43 @@ while running:
     else:
         player_rotation = 0  # Return to the original rotation
 
-    # Adjust the NPC's speed based on the trigger input
+    # Adjust the NPCs' speeds based on the trigger input
     if right_trigger > 0:
-        npc_speed = min(npc_speed + speed_up_rate, max_speed)  # Gradually speed up the NPC
+        npc1_speed = min(npc1_speed + speed_up_rate, max_speed)
+        npc2_speed = min(npc2_speed + speed_up_rate, max_speed)
     elif left_trigger > 0:
-        npc_speed = max(npc_speed - slow_down_rate, 0.5)  # Gradually slow down the NPC
+        npc1_speed = max(npc1_speed - slow_down_rate, 0.5)
+        npc2_speed = max(npc2_speed - slow_down_rate, 0.5)
     else:
-        npc_speed = max(min(npc_speed, 2), 0.5)  # Maintain the speed within the range of 0.5 to 2
+        npc1_speed = max(min(npc1_speed, 2), 0.5)
+        npc2_speed = max(min(npc2_speed, 2), 0.5)
 
-    # Move the NPC character
-    npc_y += npc_speed
-    if npc_y > WINDOW_SIZE[1]:
-        npc_x = random.choice(wrap_positions)  # Choose a random wrap position
-        npc_y = -npc_height  # Wrap the NPC back to the top
+    # Move the NPC characters
+    npc1_y += npc1_speed
+    if npc1_y > WINDOW_SIZE[1]:
+        npc1_x = random.choice(wrap_positions)
+        npc1_y = -npc1_height
 
-    # Check for collision between player and NPC
-    offset_x = npc_x - player_x
-    offset_y = npc_y - player_y
-    collision = player_mask.overlap(npc_mask, (offset_x, offset_y))
-    if collision:
+    npc2_y += npc2_speed
+    if npc2_y > WINDOW_SIZE[1]:
+        npc2_x = random.choice(wrap_positions)
+        npc2_y = -npc2_height
+
+    # Check for collision between player and NPCs
+    offset_x1 = npc1_x - player_x
+    offset_y1 = npc1_y - player_y
+    collision1 = player_mask.overlap(npc1_mask, (offset_x1, offset_y1))
+
+    offset_x2 = npc2_x - player_x
+    offset_y2 = npc2_y - player_y
+    collision2 = player_mask.overlap(npc2_mask, (offset_x2, offset_y2))
+
+    if collision1 or collision2:
         # Respawn the player
         player_x = WINDOW_SIZE[0] // 2 - player_width // 2
         player_y = WINDOW_SIZE[1] // 2 - player_height // 2
 
-     # Clear the screen
+    # Clear the screen
     screen.fill((0, 0, 0))
 
     # Draw the lane lines
@@ -160,14 +175,12 @@ while running:
     # Draw the rotated player character
     screen.blit(rotated_player_image, player_rect)
 
-    # Draw the NPC character
-    screen.blit(npc_image, (npc_x, npc_y))
+    # Draw the NPC characters
+    screen.blit(npc1_image, (npc1_x, npc1_y))
+    screen.blit(npc2_image, (npc2_x, npc2_y))
 
     # Update the display
     pygame.display.flip()
-
-# Quit Pygame
-pygame.quit()
 
 # Quit Pygame
 pygame.quit()
