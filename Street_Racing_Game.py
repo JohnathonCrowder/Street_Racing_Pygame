@@ -1,7 +1,7 @@
 import pygame
 import os
 import random
-
+import math
 import pygame.mask
 
 # Initialize Pygame
@@ -77,9 +77,13 @@ slow_down_rate = 0.05
 speed_up_rate = 0.007
 
 # Set the maximum speed for the NPCs
-max_speed = 9
+max_speed = 7
 
+# Initialize the score
+score = 0
 
+# Define the font for the score display
+font = pygame.font.Font(None, 36)
 
 # Game loop
 running = True
@@ -112,8 +116,6 @@ while running:
     player_x = max(0, min(player_x, WINDOW_SIZE[0] - player_width))
     player_y = max(0, min(player_y, WINDOW_SIZE[1] - player_height))
 
-
-
     # Adjust the player's rotation based on the x-axis value
     if x_axis < 0:
         player_rotation = 15  # Rotate to the left
@@ -133,16 +135,27 @@ while running:
         npc1_speed = max(min(npc1_speed, 2), 0.5)
         npc2_speed = max(min(npc2_speed, 2), 0.5)
 
-    # Move the NPC characters
+    # Move NPC1
     npc1_y += npc1_speed
     if npc1_y > WINDOW_SIZE[1]:
         npc1_x = random.choice(wrap_positions)
         npc1_y = -npc1_height
+        score += 1  # Increment the score when NPC1 is wrapped
 
+    # Before moving NPC2, check if it will collide with NPC1
+    proposed_npc2_y = npc2_y + npc2_speed
+    proposed_npc2_rect = pygame.Rect(npc2_x, proposed_npc2_y, npc2_width, npc2_height)
+    if proposed_npc2_rect.colliderect(pygame.Rect(npc1_x, npc1_y, npc1_width, npc1_height)):
+        # NPCs would collide, so update NPC2 x position to avoid collision
+        avoidance_x = npc1_x + npc1_width + 1 if npc2_x < npc1_x else npc1_x - npc2_width - 1
+        npc2_x = avoidance_x
+
+    # Move NPC2 with updated position
     npc2_y += npc2_speed
     if npc2_y > WINDOW_SIZE[1]:
         npc2_x = random.choice(wrap_positions)
         npc2_y = -npc2_height
+        score += 1  # Increment the score when NPC2 is wrapped
 
     # Check for collision between player and NPCs
     offset_x1 = npc1_x - player_x
@@ -178,6 +191,10 @@ while running:
     # Draw the NPC characters
     screen.blit(npc1_image, (npc1_x, npc1_y))
     screen.blit(npc2_image, (npc2_x, npc2_y))
+
+    # Draw the score
+    score_text = font.render(f"Score: {score}", True, (255, 255, 255))
+    screen.blit(score_text, (WINDOW_SIZE[0] - 150, 10))
 
     # Update the display
     pygame.display.flip()
