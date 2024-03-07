@@ -2,6 +2,7 @@ import pygame
 import os
 import random
 import math
+
 import pygame.mask
 
 # Initialize Pygame
@@ -74,7 +75,7 @@ wrap_positions = [left_lane_x, middle_lane_x, right_lane_x]
 slow_down_rate = 0.05
 
 # Set the rate at which the NPCs speed up when the right trigger is pressed
-speed_up_rate = 0.007
+speed_up_rate = 0.002
 
 # Set the maximum speed for the NPCs
 max_speed = 7
@@ -82,7 +83,10 @@ max_speed = 7
 # Initialize the score
 score = 0
 
-# Define the font for the score display
+# Initialize the lives
+lives = 3
+
+# Define the font for the score and lives display
 font = pygame.font.Font(None, 36)
 
 # Game loop
@@ -167,9 +171,17 @@ while running:
     collision2 = player_mask.overlap(npc2_mask, (offset_x2, offset_y2))
 
     if collision1 or collision2:
+        # Decrease the number of lives
+        lives -= 1
+
         # Respawn the player
         player_x = WINDOW_SIZE[0] // 2 - player_width // 2
         player_y = WINDOW_SIZE[1] // 2 - player_height // 2
+
+        # Reset the score if no lives remain
+        if lives == 0:
+            score = 0
+            lives = 3  # Reset the lives to 3
 
     # Clear the screen
     screen.fill((0, 0, 0))
@@ -192,9 +204,12 @@ while running:
     screen.blit(npc1_image, (npc1_x, npc1_y))
     screen.blit(npc2_image, (npc2_x, npc2_y))
 
-    # Draw the score
+    # Draw the score and lives
     score_text = font.render(f"Score: {score}", True, (255, 255, 255))
     screen.blit(score_text, (WINDOW_SIZE[0] - 150, 10))
+
+    lives_text = font.render(f"Lives: {lives}", True, (255, 255, 255))
+    screen.blit(lives_text, (WINDOW_SIZE[0] - 150, 40))
 
     # Update the display
     pygame.display.flip()
