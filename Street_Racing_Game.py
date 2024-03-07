@@ -77,6 +77,8 @@ speed_up_rate = 0.007
 max_speed = 9
 
 
+
+
 # Game loop
 running = True
 while running:
@@ -107,6 +109,8 @@ while running:
     # Keep the player character within the window bounds
     player_x = max(0, min(player_x, WINDOW_SIZE[0] - player_width))
     player_y = max(0, min(player_y, WINDOW_SIZE[1] - player_height))
+
+
 
     # Adjust the player's rotation based on the x-axis value
     if x_axis < 0:
@@ -139,8 +143,13 @@ while running:
         player_x = WINDOW_SIZE[0] // 2 - player_width // 2
         player_y = WINDOW_SIZE[1] // 2 - player_height // 2
 
-    # Clear the screen
+     # Clear the screen
     screen.fill((0, 0, 0))
+
+    # Draw the lane lines
+    pygame.draw.line(screen, line_color, (left_lane_x, 0), (left_lane_x, WINDOW_SIZE[1]), 5)
+    pygame.draw.line(screen, line_color, (middle_lane_x, 0), (middle_lane_x, WINDOW_SIZE[1]), 5)
+    pygame.draw.line(screen, line_color, (right_lane_x, 0), (right_lane_x, WINDOW_SIZE[1]), 5)
 
     # Rotate the player character
     rotated_player_image = pygame.transform.rotate(player_image, player_rotation)
@@ -154,13 +163,11 @@ while running:
     # Draw the NPC character
     screen.blit(npc_image, (npc_x, npc_y))
 
-    # Draw the lane lines
-    pygame.draw.line(screen, line_color, (left_lane_x, 0), (left_lane_x, WINDOW_SIZE[1]), 5)
-    pygame.draw.line(screen, line_color, (middle_lane_x, 0), (middle_lane_x, WINDOW_SIZE[1]), 5)
-    pygame.draw.line(screen, line_color, (right_lane_x, 0), (right_lane_x, WINDOW_SIZE[1]), 5)
-
     # Update the display
     pygame.display.flip()
+
+# Quit Pygame
+pygame.quit()
 
 # Quit Pygame
 pygame.quit()
