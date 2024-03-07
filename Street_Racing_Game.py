@@ -56,12 +56,16 @@ pygame.joystick.init()
 joystick = pygame.joystick.Joystick(0)
 joystick.init()
 
+# Define the lane positions
+left_lane_x = WINDOW_SIZE[0] // 4 - npc_width // 2
+middle_lane_x = WINDOW_SIZE[0] // 2 - npc_width // 2
+right_lane_x = 3 * WINDOW_SIZE[0] // 4 - npc_width // 2
+
+# Define the line colors
+line_color = (255, 255, 255)  # White color
+
 # Define the possible wrap positions for the NPC
-wrap_positions = [
-    WINDOW_SIZE[0] // 4 - npc_width // 2,
-    WINDOW_SIZE[0] // 2 - npc_width // 2,
-    3 * WINDOW_SIZE[0] // 4 - npc_width // 2
-]
+wrap_positions = [left_lane_x, middle_lane_x, right_lane_x]
 
 # Set the rate at which the NPC slows down when the left trigger is pressed
 slow_down_rate = 0.05
@@ -149,6 +153,11 @@ while running:
 
     # Draw the NPC character
     screen.blit(npc_image, (npc_x, npc_y))
+
+    # Draw the lane lines
+    pygame.draw.line(screen, line_color, (left_lane_x, 0), (left_lane_x, WINDOW_SIZE[1]), 5)
+    pygame.draw.line(screen, line_color, (middle_lane_x, 0), (middle_lane_x, WINDOW_SIZE[1]), 5)
+    pygame.draw.line(screen, line_color, (right_lane_x, 0), (right_lane_x, WINDOW_SIZE[1]), 5)
 
     # Update the display
     pygame.display.flip()
