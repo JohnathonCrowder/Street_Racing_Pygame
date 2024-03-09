@@ -212,7 +212,7 @@ while running:
     screen.fill((0, 0, 0))
 
      # Clear left side green
-    screen.fill(grass_color, rect=(0,0,WINDOW_SIZE[0]//5.8,WINDOW_SIZE[1]))
+    screen.fill(grass_color, rect=(0,0,WINDOW_SIZE[0]//5.4,WINDOW_SIZE[1]))
 
     # Clear middle black
     screen.fill((0,0,0), rect=(WINDOW_SIZE[0]//2,0,WINDOW_SIZE[0]//2,WINDOW_SIZE[1]))
@@ -226,6 +226,8 @@ while running:
     pygame.draw.line(screen, line_color, (left_lane_x, 0), (left_lane_x, WINDOW_SIZE[1]), 5)
     pygame.draw.line(screen, line_color, (middle_lane_x, 0), (middle_lane_x, WINDOW_SIZE[1]), 5)
     pygame.draw.line(screen, line_color, (right_lane_x, 0), (right_lane_x, WINDOW_SIZE[1]), 5)
+    rightmost_lane_x_adjusted = rightmost_lane_x - 30  # Adjust the rightmost_lane_x value
+    pygame.draw.line(screen, line_color, (rightmost_lane_x_adjusted, 0), (rightmost_lane_x_adjusted, WINDOW_SIZE[1]), 5)
 
     # Rotate the player character
     rotated_player_image = pygame.transform.rotate(player_image, player_rotation)
