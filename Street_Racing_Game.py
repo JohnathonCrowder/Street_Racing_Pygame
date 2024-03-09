@@ -40,14 +40,28 @@ player_y = WINDOW_SIZE[1] // 2 - player_height // 2
 # Set the player's initial rotation
 player_rotation = 0
 
+# Define the lane positions
+left_lane_x = WINDOW_SIZE[0] // 4 - npc1_width // 2
+middle_lane_x = WINDOW_SIZE[0] // 2 - npc1_width // 2
+right_lane_x = 3 * WINDOW_SIZE[0] // 4 - npc1_width // 2
+rightmost_lane_x = WINDOW_SIZE[0] - npc1_width // 2
+
 # Set the NPCs' initial positions and speeds
-npc1_x = WINDOW_SIZE[0] // 2 - npc1_width // 2
+npc1_x = random.randint(left_lane_x + npc1_width // 2, right_lane_x - npc1_width // 2)
 npc1_y = -npc1_height
 npc1_speed = 2
 
-npc2_x = WINDOW_SIZE[0] // 2 - npc2_width // 2
+npc2_x = random.randint(middle_lane_x + npc2_width // 2, rightmost_lane_x - npc2_width // 2)
 npc2_y = -npc2_height
 npc2_speed = 2
+
+# Define the wrap positions for the NPCs
+wrap_positions = [left_lane_x + npc1_width // 2,
+                 middle_lane_x,
+                 right_lane_x - npc1_width // 2,
+                 WINDOW_SIZE[0] - npc1_width//0.7]
+
+
 
 # Set the player's speed
 player_speed = 5
@@ -60,16 +74,11 @@ pygame.joystick.init()
 joystick = pygame.joystick.Joystick(0)
 joystick.init()
 
-# Define the lane positions
-left_lane_x = WINDOW_SIZE[0] // 4 - npc1_width // 2
-middle_lane_x = WINDOW_SIZE[0] // 2 - npc1_width // 2
-right_lane_x = 3 * WINDOW_SIZE[0] // 4 - npc1_width // 2
-
 # Define the line colors
 line_color = (255, 255, 255)  # White color
 
-# Define the possible wrap positions for the NPCs
-wrap_positions = [left_lane_x, middle_lane_x, right_lane_x]
+# Define the grass color
+grass_color = (154, 205, 50)
 
 # Set the rate at which the NPCs slow down when the left trigger is pressed
 slow_down_rate = 0.05
@@ -88,6 +97,12 @@ lives = 3
 
 # Define the font for the score and lives display
 font = pygame.font.Font(None, 36)
+
+
+
+
+
+
 
 # Game loop
 running = True
@@ -111,6 +126,7 @@ while running:
         x_axis = 0
     if abs(y_axis) < JOYSTICK_THRESHOLD:
         y_axis = 0
+
 
     # Move the player character based on the axis values
     player_x += x_axis * player_speed
@@ -146,29 +162,38 @@ while running:
         npc1_y = -npc1_height
         score += 1  # Increment the score when NPC1 is wrapped
 
-    # Before moving NPC2, check if it will collide with NPC1
-    proposed_npc2_y = npc2_y + npc2_speed
-    proposed_npc2_rect = pygame.Rect(npc2_x, proposed_npc2_y, npc2_width, npc2_height)
-    if proposed_npc2_rect.colliderect(pygame.Rect(npc1_x, npc1_y, npc1_width, npc1_height)):
-        # NPCs would collide, so update NPC2 x position to avoid collision
-        avoidance_x = npc1_x + npc1_width + 1 if npc2_x < npc1_x else npc1_x - npc2_width - 1
-        npc2_x = avoidance_x
+    # Move NPC2 only if the score is above 3
+    if score >= 5:
+        # Before moving NPC2, check if it will collide with NPC1
+        proposed_npc2_y = npc2_y + npc2_speed
+        proposed_npc2_rect = pygame.Rect(npc2_x, proposed_npc2_y, npc2_width, npc2_height)
+        if proposed_npc2_rect.colliderect(pygame.Rect(npc1_x, npc1_y, npc1_width, npc1_height)):
+            # NPCs would collide, so update NPC2 x position to avoid collision
+            avoidance_x = npc1_x + npc1_width + 1 if npc2_x < npc1_x else npc1_x - npc2_width - 1
+            npc2_x = avoidance_x
 
-    # Move NPC2 with updated position
-    npc2_y += npc2_speed
-    if npc2_y > WINDOW_SIZE[1]:
-        npc2_x = random.choice(wrap_positions)
-        npc2_y = -npc2_height
-        score += 1  # Increment the score when NPC2 is wrapped
+        # Move NPC2 with updated position
+        npc2_y += npc2_speed
+        if npc2_y > WINDOW_SIZE[1]:
+            npc2_x = random.choice(wrap_positions)
+            npc2_y = -npc2_height
+            score += 1  # Increment the score when NPC2 is wrapped
+    else:
+        # If the score is below 3, set NPC2 off-screen
+        npc2_y = WINDOW_SIZE[1] + npc2_height
 
     # Check for collision between player and NPCs
     offset_x1 = npc1_x - player_x
     offset_y1 = npc1_y - player_y
     collision1 = player_mask.overlap(npc1_mask, (offset_x1, offset_y1))
 
-    offset_x2 = npc2_x - player_x
-    offset_y2 = npc2_y - player_y
-    collision2 = player_mask.overlap(npc2_mask, (offset_x2, offset_y2))
+    # Check for collision with NPC2 only if the score is above 3
+    if score >= 5:
+        offset_x2 = npc2_x - player_x
+        offset_y2 = npc2_y - player_y
+        collision2 = player_mask.overlap(npc2_mask, (offset_x2, offset_y2))
+    else:
+        collision2 = False
 
     if collision1 or collision2:
         # Decrease the number of lives
@@ -185,6 +210,17 @@ while running:
 
     # Clear the screen
     screen.fill((0, 0, 0))
+
+     # Clear left side green
+    screen.fill(grass_color, rect=(0,0,WINDOW_SIZE[0]//5.8,WINDOW_SIZE[1]))
+
+    # Clear middle black
+    screen.fill((0,0,0), rect=(WINDOW_SIZE[0]//2,0,WINDOW_SIZE[0]//2,WINDOW_SIZE[1]))
+
+    # Clear right side green
+    screen.fill(grass_color, rect=(WINDOW_SIZE[0]//1.1,0,WINDOW_SIZE[0],WINDOW_SIZE[1]))
+
+
 
     # Draw the lane lines
     pygame.draw.line(screen, line_color, (left_lane_x, 0), (left_lane_x, WINDOW_SIZE[1]), 5)
