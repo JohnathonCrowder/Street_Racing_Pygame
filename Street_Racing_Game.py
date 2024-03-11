@@ -106,6 +106,25 @@ lives = 3
 # Define the font for the score and lives display
 font = pygame.font.Font(None, 36)
 
+
+
+# Load the fourth NPC character image
+npc4_image = pygame.image.load(r"C:\Users\Admin\Pictures\txt\Transparent\mpjm_7eoy_210607_transparent.png")
+npc4_image = pygame.transform.scale(npc4_image, (npc4_image.get_width() // 16.5, npc4_image.get_height() // 16.5))
+npc4_mask = pygame.mask.from_surface(npc4_image)
+
+# Get the fourth NPC's width and height
+npc4_width, npc4_height = npc4_image.get_size()
+
+# Set the fourth NPC's initial position and speed
+npc4_x = left_lane_x // 2 - npc4_width // 2
+npc4_y = -npc4_height
+npc4_speed = 4
+
+# Define the wrap position for the fourth NPC
+npc4_wrap_positions = [left_lane_x // 2 - npc4_width // 2,
+                      WINDOW_SIZE[0] - npc4_width // 2]
+
 # Game loop
 running = True
 while running:
@@ -212,6 +231,26 @@ while running:
     offset_y1 = npc1_y - player_y
     collision1 = player_mask.overlap(npc1_mask, (offset_x1, offset_y1))
 
+    # Move NPC4 only if the score is above 20
+    if score > 20:
+        # Move NPC4 without collision check
+        npc4_y += npc4_speed
+        if npc4_y > WINDOW_SIZE[1]:
+            npc4_x = random.choice(npc4_wrap_positions)  # Choose a random wrap position from the new list
+            npc4_y = -npc4_height
+            score += 1  # Increment the score when NPC4 is wrapped
+    else:
+        # If the score is below 20, set NPC4 off-screen
+        npc4_y = WINDOW_SIZE[1] + npc4_height
+
+    # Check for collision between player and NPC4 only if the score is above 20
+    if score > 20:
+        offset_x4 = npc4_x - player_x
+        offset_y4 = npc4_y - player_y
+        collision4 = player_mask.overlap(npc4_mask, (offset_x4, offset_y4))
+    else:
+        collision4 = False
+
     # Check for collision with NPC2 only if the score is above 3
     if score >= 5:
         offset_x2 = npc2_x - player_x
@@ -228,7 +267,7 @@ while running:
     else:
         collision3 = False
 
-    if collision1 or collision2 or collision3:
+    if collision1 or collision2 or collision3 or collision4:
         # Decrease the number of lives
         lives -= 1
 
@@ -273,6 +312,8 @@ while running:
     screen.blit(npc1_image, (npc1_x, npc1_y))
     screen.blit(npc2_image, (npc2_x, npc2_y))
     screen.blit(npc3_image, (npc3_x, npc3_y))
+    # Draw the fourth NPC character
+    screen.blit(npc4_image, (npc4_x, npc4_y))
 
     # Draw the score and lives
     score_text = font.render(f"Score: {score}", True, (255, 255, 255))
