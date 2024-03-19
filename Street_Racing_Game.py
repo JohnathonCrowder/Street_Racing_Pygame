@@ -75,6 +75,7 @@ npc3_y = -npc3_height
 npc3_speed = 2
 
 
+store_menu_open = False
 
 # Define the wrap positions for the NPCs
 wrap_positions = [left_lane_x + npc1_width // 2,
@@ -157,6 +158,48 @@ labels_rect_surface.set_alpha(225)  # Set the transparency of the rectangle (0-2
 labels_rect_x = WINDOW_SIZE[0] - labels_rect_width - 10
 labels_rect_y = 10
 
+def draw_store_menu():
+    # Clear the store menu surface
+    store_menu_surface = pygame.Surface(WINDOW_SIZE, pygame.SRCALPHA)
+    store_menu_surface.fill((0, 0, 0, 128))  # Semi-transparent black background
+
+    # Draw the store menu title
+    title_text = font.render("Store Menu", True, (255, 255, 255))
+    title_rect = title_text.get_rect(center=(WINDOW_SIZE[0] // 2, WINDOW_SIZE[1] // 4))
+    store_menu_surface.blit(title_text, title_rect)
+
+    # Draw the store menu options (placeholder for now)
+    option1_text = font.render("Option 1", True, (255, 255, 255))
+    option1_rect = option1_text.get_rect(center=(WINDOW_SIZE[0] // 2, WINDOW_SIZE[1] // 2))
+    store_menu_surface.blit(option1_text, option1_rect)
+
+    option2_text = font.render("Option 2", True, (255, 255, 255))
+    option2_rect = option2_text.get_rect(center=(WINDOW_SIZE[0] // 2, WINDOW_SIZE[1] // 2 + 50))
+    store_menu_surface.blit(option2_text, option2_rect)
+
+    # Blit the store menu surface onto the main screen
+    screen.blit(store_menu_surface, (0, 0))
+
+def draw_background():
+    # Clear the screen
+    screen.fill((0, 0, 0))
+
+    # Clear left side green
+    screen.fill(grass_color, rect=(0, 0, WINDOW_SIZE[0]//5.4, WINDOW_SIZE[1]))
+
+    # Clear middle black
+    screen.fill((0, 0, 0), rect=(WINDOW_SIZE[0]//2, 0, WINDOW_SIZE[0]//2, WINDOW_SIZE[1]))
+
+    # Clear right side green
+    screen.fill(grass_color, rect=(WINDOW_SIZE[0]//1.1, 0, WINDOW_SIZE[0], WINDOW_SIZE[1]))
+
+    # Draw the lane lines
+    pygame.draw.line(screen, line_color, (left_lane_x, 0), (left_lane_x, WINDOW_SIZE[1]), 5)
+    pygame.draw.line(screen, line_color, (middle_lane_x, 0), (middle_lane_x, WINDOW_SIZE[1]), 5)
+    pygame.draw.line(screen, line_color, (right_lane_x, 0), (right_lane_x, WINDOW_SIZE[1]), 5)
+    rightmost_lane_x_adjusted = rightmost_lane_x - 30  # Adjust the rightmost_lane_x value
+    pygame.draw.line(screen, line_color, (rightmost_lane_x_adjusted, 0), (rightmost_lane_x_adjusted, WINDOW_SIZE[1]), 5)
+
 
 def reset_npc_positions():
     global npc1_x, npc1_y, npc2_x, npc2_y, npc3_x, npc3_y, npc4_x, npc4_y
@@ -181,11 +224,37 @@ while running:
         if event.type == pygame.QUIT:
             running = False
         elif event.type == pygame.JOYBUTTONDOWN:
-            if event.button == 8 and waiting_for_respawn:  # Start button (button index 7)
+            if event.button == 8 and waiting_for_respawn and not store_menu_open:  # Start button (button index 7)
                 # Respawn the player
                 player_x = WINDOW_SIZE[0] // 2 - player_width // 2
                 player_y = WINDOW_SIZE[1] // 2 - player_height // 2
                 waiting_for_respawn = False
+            elif event.button == 9 and waiting_for_respawn:  # Select button (button index 8)
+                # Toggle the store menu
+                store_menu_open = not store_menu_open
+                if not store_menu_open:
+                    # If the store menu is closed, redraw the background and respawn message
+                    draw_background()
+                    respawn_text = font.render("Press Start to Respawn", True, (255, 255, 255))
+                    respawn_rect = respawn_text.get_rect(center=(WINDOW_SIZE[0] // 2, WINDOW_SIZE[1] // 2))
+                    screen.blit(respawn_text, respawn_rect)
+                    pygame.display.flip()
+
+    # Skip player movement and collision checks if waiting for respawn
+    if waiting_for_respawn:
+        if store_menu_open:
+            # Draw the store menu
+            draw_store_menu()
+            pygame.display.flip()
+        else:
+            # Draw the background and respawn message
+            draw_background()
+            respawn_text = font.render("Press Start to Respawn", True, (255, 255, 255))
+            respawn_rect = respawn_text.get_rect(center=(WINDOW_SIZE[0] // 2, WINDOW_SIZE[1] // 2))
+            screen.blit(respawn_text, respawn_rect)
+            pygame.display.flip()
+
+        continue
 
     # Skip player movement and collision checks if waiting for respawn
     if waiting_for_respawn:
