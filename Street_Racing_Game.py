@@ -2,6 +2,7 @@ import pygame
 import os
 import random
 import math
+import time
 
 import pygame.mask
 
@@ -94,8 +95,9 @@ slow_down_rate = 0.05
 # Set the rate at which the NPCs speed up when the right trigger is pressed
 speed_up_rate = 0.002
 
-# Set the maximum speed for the NPCs
-max_speed = 7
+# Set the initial maximum speed for the NPCs
+initial_max_speed = 7
+max_speed = initial_max_speed
 
 # Initialize the score
 score = 0
@@ -105,6 +107,9 @@ lives = 3
 
 # Define the font for the score and lives display
 font = pygame.font.Font(None, 36)
+
+# Initialize the waiting for respawn flag
+waiting_for_respawn = False
 
 
 
@@ -125,6 +130,22 @@ npc4_speed = 4
 npc4_wrap_positions = [left_lane_x // 2 - npc4_width // 2,
                       WINDOW_SIZE[0] - npc4_width // 2]
 
+
+def reset_npc_positions():
+    global npc1_x, npc1_y, npc2_x, npc2_y, npc3_x, npc3_y, npc4_x, npc4_y
+
+    # Set random y-coordinates for each NPC to stagger their respawning
+    npc1_y = -random.randint(npc1_height, WINDOW_SIZE[1])
+    npc2_y = -random.randint(npc2_height, WINDOW_SIZE[1])
+    npc3_y = -random.randint(npc3_height, WINDOW_SIZE[1])
+    npc4_y = -random.randint(npc4_height, WINDOW_SIZE[1])
+
+    # Set random x-coordinates for each NPC
+    npc1_x = random.choice(wrap_positions)
+    npc2_x = random.choice(wrap_positions)
+    npc3_x = random.choice(wrap_positions)
+    npc4_x = random.choice(npc4_wrap_positions)
+
 # Game loop
 running = True
 while running:
@@ -132,6 +153,16 @@ while running:
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
             running = False
+        elif event.type == pygame.JOYBUTTONDOWN:
+            if event.button == 8 and waiting_for_respawn:  # Start button (button index 7)
+                # Respawn the player
+                player_x = WINDOW_SIZE[0] // 2 - player_width // 2
+                player_y = WINDOW_SIZE[1] // 2 - player_height // 2
+                waiting_for_respawn = False
+
+    # Skip player movement and collision checks if waiting for respawn
+    if waiting_for_respawn:
+        continue
 
     # Handle controller input
     # Get the axis values (left stick)
@@ -163,6 +194,10 @@ while running:
         player_rotation = -15  # Rotate to the right
     else:
         player_rotation = 0  # Return to the original rotation
+
+    # Check if the score reaches a multiple of 50 and increase the max speed
+    if score > 0 and score % 50 == 0:
+        max_speed += 1
 
     # Adjust the NPCs' speeds based on the trigger input
     if right_trigger > 0:
@@ -271,14 +306,17 @@ while running:
         # Decrease the number of lives
         lives -= 1
 
-        # Respawn the player
-        player_x = WINDOW_SIZE[0] // 2 - player_width // 2
-        player_y = WINDOW_SIZE[1] // 2 - player_height // 2
+        # Set the waiting for respawn flag
+        waiting_for_respawn = True
+
+        # Reset the positions of the NPCs
+        reset_npc_positions()
 
         # Reset the score if no lives remain
         if lives == 0:
             score = 0
             lives = 3  # Reset the lives to 3
+            max_speed = initial_max_speed  # Reset the maximum speed to the default
 
     # Clear the screen
     screen.fill((0, 0, 0))
