@@ -34,6 +34,14 @@ npc3_image = pygame.image.load(r"C:\Users\Admin\Pictures\txt\Transparent\top-car
 npc3_image = pygame.transform.scale(npc3_image, (npc3_image.get_width() // 3.5, npc3_image.get_height() // 3.5))
 npc3_mask = pygame.mask.from_surface(npc3_image)
 
+# Load the coin image
+coin_image = pygame.image.load(r"C:\Users\Admin\Pictures\txt\Transparent\Coin.png")
+coin_image = pygame.transform.scale(coin_image, (coin_image.get_width() // 9, coin_image.get_height() // 9))
+coin_mask = pygame.mask.from_surface(coin_image)
+
+# Get the coin's width and height
+coin_width, coin_height = coin_image.get_size()
+
 # Get the character's width and height
 player_width, player_height = player_image.get_size()
 npc1_width, npc1_height = npc1_image.get_size()
@@ -66,11 +74,17 @@ npc3_x = random.randint(left_lane_x + npc3_width // 2, right_lane_x - npc3_width
 npc3_y = -npc3_height
 npc3_speed = 2
 
+
+
 # Define the wrap positions for the NPCs
 wrap_positions = [left_lane_x + npc1_width // 2,
                  middle_lane_x,
                  right_lane_x - npc1_width // 2,
                  WINDOW_SIZE[0] - npc1_width//0.7]
+
+# Set the coin's initial position
+coin_x = random.choice(wrap_positions)
+coin_y = -coin_height
 
 # Set the player's speed
 player_speed = 5
@@ -93,7 +107,7 @@ grass_color = (154, 205, 50)
 slow_down_rate = 0.05
 
 # Set the rate at which the NPCs speed up when the right trigger is pressed
-speed_up_rate = 0.002
+speed_up_rate = 0.007
 
 # Set the initial maximum speed for the NPCs
 initial_max_speed = 7
@@ -286,6 +300,29 @@ while running:
     else:
         collision4 = False
 
+    # Move the coin only if the score is above 15
+    if score >= 15:
+        coin_y += npc1_speed  # Use npc1_speed for the coin's speed
+        if coin_y > WINDOW_SIZE[1]:
+            coin_x = random.choice(wrap_positions)
+            coin_y = -coin_height
+    else:
+        # If the score is below 15, set the coin off-screen
+        coin_y = WINDOW_SIZE[1] + coin_height
+
+    # Check for collision between player and coin only if the score is above 15
+    if score >= 15:
+        offset_coin_x = coin_x - player_x
+        offset_coin_y = coin_y - player_y
+        coin_collision = player_mask.overlap(coin_mask, (offset_coin_x, offset_coin_y))
+
+        if coin_collision:
+            # If the player collects the coin, move it off-screen
+            coin_y = WINDOW_SIZE[1] + coin_height
+            score += 1  # Increment the score when the coin is collected
+    else:
+        coin_collision = False
+
     # Check for collision with NPC2 only if the score is above 3
     if score >= 5:
         offset_x2 = npc2_x - player_x
@@ -352,6 +389,10 @@ while running:
     screen.blit(npc3_image, (npc3_x, npc3_y))
     # Draw the fourth NPC character
     screen.blit(npc4_image, (npc4_x, npc4_y))
+
+    # Draw the coin only if the score is above 15
+    if score >= 15:
+        screen.blit(coin_image, (coin_x, coin_y))
 
     # Draw the score and lives
     score_text = font.render(f"Score: {score}", True, (255, 255, 255))
