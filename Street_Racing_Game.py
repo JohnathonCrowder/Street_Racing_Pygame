@@ -116,6 +116,9 @@ max_speed = initial_max_speed
 # Initialize the score
 score = 0
 
+total_coins = 0
+
+
 # Initialize the lives
 lives = 3
 
@@ -320,6 +323,8 @@ while running:
             # If the player collects the coin, move it off-screen
             coin_y = WINDOW_SIZE[1] + coin_height
             score += 1  # Increment the score when the coin is collected
+            total_coins += 1  # Increment the total coins collected
+
     else:
         coin_collision = False
 
@@ -393,6 +398,10 @@ while running:
     # Draw the coin only if the score is above 15
     if score >= 15:
         screen.blit(coin_image, (coin_x, coin_y))
+
+    # Draw the total coins collected
+    total_coins_text = font.render(f"Coins: {total_coins}", True, (255, 255, 255))
+    screen.blit(total_coins_text, (WINDOW_SIZE[0] - 150, 70))
 
     # Draw the score and lives
     score_text = font.render(f"Score: {score}", True, (255, 255, 255))
