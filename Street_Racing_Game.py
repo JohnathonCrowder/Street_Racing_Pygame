@@ -147,6 +147,16 @@ npc4_speed = 4
 npc4_wrap_positions = [left_lane_x // 2 - npc4_width // 2,
                       WINDOW_SIZE[0] - npc4_width // 2]
 
+# Create a surface for the labels rectangle
+labels_rect_width = 200
+labels_rect_height = 100
+labels_rect_surface = pygame.Surface((labels_rect_width, labels_rect_height))
+labels_rect_surface.set_alpha(225)  # Set the transparency of the rectangle (0-255)
+
+# Set the position of the labels rectangle
+labels_rect_x = WINDOW_SIZE[0] - labels_rect_width - 10
+labels_rect_y = 10
+
 
 def reset_npc_positions():
     global npc1_x, npc1_y, npc2_x, npc2_y, npc3_x, npc3_y, npc4_x, npc4_y
@@ -399,16 +409,23 @@ while running:
     if score >= 15:
         screen.blit(coin_image, (coin_x, coin_y))
 
-    # Draw the total coins collected
-    total_coins_text = font.render(f"Coins: {total_coins}", True, (255, 255, 255))
-    screen.blit(total_coins_text, (WINDOW_SIZE[0] - 150, 70))
+    # Clear the labels rectangle surface
+    labels_rect_surface.fill((128, 128, 128))  # Fill with gray color
 
-    # Draw the score and lives
+    # Draw the score on the labels rectangle surface
     score_text = font.render(f"Score: {score}", True, (255, 255, 255))
-    screen.blit(score_text, (WINDOW_SIZE[0] - 150, 10))
+    labels_rect_surface.blit(score_text, (10, 10))
 
+    # Draw the lives on the labels rectangle surface
     lives_text = font.render(f"Lives: {lives}", True, (255, 255, 255))
-    screen.blit(lives_text, (WINDOW_SIZE[0] - 150, 40))
+    labels_rect_surface.blit(lives_text, (10, 40))
+
+    # Draw the total coins collected on the labels rectangle surface
+    total_coins_text = font.render(f"Coins: {total_coins}", True, (255, 255, 255))
+    labels_rect_surface.blit(total_coins_text, (10, 70))
+
+    # Blit the labels rectangle surface onto the main screen
+    screen.blit(labels_rect_surface, (labels_rect_x, labels_rect_y))
 
     # Update the display
     pygame.display.flip()
