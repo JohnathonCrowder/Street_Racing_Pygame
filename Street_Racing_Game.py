@@ -299,6 +299,53 @@ def handle_player_movement(player_x, player_y, player_width, player_height, play
 
     return player_x, player_y, player_rotation, rotated_player_image, player_rect
 
+def handle_npc_movement(score, npc_speeds, npc_positions, npc_heights, npc_widths, wrap_positions, max_speed, speed_up_rate, slow_down_rate):
+    left_trigger = joystick.get_axis(4)
+    right_trigger = joystick.get_axis(5)
+
+    for i in range(len(npc_speeds)):
+        if right_trigger > 0:
+            npc_speeds[i] = min(npc_speeds[i] + speed_up_rate, max_speed)
+        elif left_trigger > 0:
+            npc_speeds[i] = max(npc_speeds[i] - slow_down_rate, 0.5)
+        else:
+            npc_speeds[i] = max(min(npc_speeds[i], 2), 0.5)
+
+        npc_x, npc_y = npc_positions[i]
+        npc_height = npc_heights[i]
+        npc_width = npc_widths[i]
+
+        if i == 0 or score >= 5:  # Move NPC1 always, move NPC2 only if score is above 5
+            npc_y += npc_speeds[i]
+            if npc_y > WINDOW_SIZE[1]:
+                npc_x = random.choice(wrap_positions)
+                npc_y = -npc_height
+                score += 1
+        elif i == 2 and score >= 20:  # Move NPC3 only if score is above 20
+            npc_y += npc_speeds[i]
+            if npc_y > WINDOW_SIZE[1]:
+                npc_x = random.choice(wrap_positions)
+                npc_y = -npc_height
+                score += 1
+        else:
+            npc_y = WINDOW_SIZE[1] + npc_height
+
+        npc_positions[i] = (npc_x, npc_y)
+
+    # Check for collisions between NPCs and respawn only one of them
+    for i in range(len(npc_positions)):
+        for j in range(i + 1, len(npc_positions)):
+            npc1_rect = pygame.Rect(npc_positions[i][0], npc_positions[i][1], npc_widths[i], npc_heights[i])
+            npc2_rect = pygame.Rect(npc_positions[j][0], npc_positions[j][1], npc_widths[j], npc_heights[j])
+
+            if npc1_rect.colliderect(npc2_rect):
+                # Respawn only one of the colliding NPCs
+                if random.choice([True, False]):
+                    npc_positions[i] = (random.choice(wrap_positions), -npc_heights[i])
+                else:
+                    npc_positions[j] = (random.choice(wrap_positions), -npc_heights[j])
+
+    return score, npc_speeds, npc_positions
 
 
 # Game loop
@@ -352,77 +399,28 @@ while running:
 
     ###### NPC Movement ######################
 
-    # Get the trigger values
-    left_trigger = joystick.get_axis(4)
-    right_trigger = joystick.get_axis(5)
+     # Handle NPC movement
+    score, npc_speeds, npc_positions = handle_npc_movement(
+        score,
+        [npc1_speed, npc2_speed, npc3_speed],
+        [(npc1_x, npc1_y), (npc2_x, npc2_y), (npc3_x, npc3_y)],
+        [npc1_height, npc2_height, npc3_height],
+        [npc1_width, npc2_width, npc3_width],  # Pass the NPC widths
+        wrap_positions,
+        max_speed,
+        speed_up_rate,
+        slow_down_rate
+    )
 
-    # Adjust the NPCs' speeds based on the trigger input
-    if right_trigger > 0:
-        npc1_speed = min(npc1_speed + speed_up_rate, max_speed)
-        npc2_speed = min(npc2_speed + speed_up_rate, max_speed)
-        npc3_speed = min(npc3_speed + speed_up_rate, max_speed)
-    elif left_trigger > 0:
-        npc1_speed = max(npc1_speed - slow_down_rate, 0.5)
-        npc2_speed = max(npc2_speed - slow_down_rate, 0.5)
-        npc3_speed = max(npc3_speed - slow_down_rate, 0.5)
-    else:
-        npc1_speed = max(min(npc1_speed, 2), 0.5)
-        npc2_speed = max(min(npc2_speed, 2), 0.5)
-        npc3_speed = max(min(npc3_speed, 2), 0.5)
+    npc1_x, npc1_y = npc_positions[0]
+    npc2_x, npc2_y = npc_positions[1]
+    npc3_x, npc3_y = npc_positions[2]
 
-    # Move NPC1
-    npc1_y += npc1_speed
-    if npc1_y > WINDOW_SIZE[1]:
-        npc1_x = random.choice(wrap_positions)
-        npc1_y = -npc1_height
-        score += 1  # Increment the score when NPC1 is wrapped
-
-    # Move NPC2 only if the score is above 3
-    if score >= 5:
-        # Before moving NPC2, check if it will collide with NPC1
-        proposed_npc2_y = npc2_y + npc2_speed
-        proposed_npc2_rect = pygame.Rect(npc2_x, proposed_npc2_y, npc2_width, npc2_height)
-        if proposed_npc2_rect.colliderect(pygame.Rect(npc1_x, npc1_y, npc1_width, npc1_height)):
-            # NPCs would collide, so update NPC2 x position to avoid collision
-            avoidance_x = npc1_x + npc1_width + 1 if npc2_x < npc1_x else npc1_x - npc2_width - 1
-            npc2_x = avoidance_x
-
-        # Move NPC2 with updated position
-        npc2_y += npc2_speed
-        if npc2_y > WINDOW_SIZE[1]:
-            npc2_x = random.choice(wrap_positions)
-            npc2_y = -npc2_height
-            score += 1  # Increment the score when NPC2 is wrapped
-    else:
-        # If the score is below 3, set NPC2 off-screen
-        npc2_y = WINDOW_SIZE[1] + npc2_height
+    npc1_speed, npc2_speed, npc3_speed = npc_speeds
 
 
-
-    # Move NPC3 only if the score is above 20
-    if score >= 20:
-        # Before moving NPC3, check if it will collide with NPC1 or NPC2
-        proposed_npc3_y = npc3_y + npc3_speed
-        proposed_npc3_rect = pygame.Rect(npc3_x, proposed_npc3_y, npc3_width, npc3_height)
-        if proposed_npc3_rect.colliderect(pygame.Rect(npc1_x, npc1_y, npc1_width, npc1_height)) or \
-                proposed_npc3_rect.colliderect(pygame.Rect(npc2_x, npc2_y, npc2_width, npc2_height)):
-            # NPCs would collide, so update NPC3 x position to avoid collision
-            avoidance_x = npc1_x + npc1_width + 1 if npc3_x < npc1_x else npc2_x - npc3_width - 1
-            npc3_x = avoidance_x
-
-        # Move NPC3 with updated position
-        npc3_y += npc3_speed
-        if npc3_y > WINDOW_SIZE[1]:
-            npc3_x = random.choice(wrap_positions)
-            npc3_y = -npc3_height
-            score += 1  # Increment the score when NPC3 is wrapped
-    else:
-        # If the score is below 20, set NPC3 off-screen
-        npc3_y = WINDOW_SIZE[1] + npc3_height
-
-
-
-    # Move NPC4 only if the score is above 20
+    #Tree Movement
+    # Move Tree only if the score is above 20
     if score > 20:
         # Move NPC4 without collision check
         npc4_y += npc4_speed
