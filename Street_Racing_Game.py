@@ -131,6 +131,8 @@ waiting_for_respawn = False
 
 
 
+
+
 # Load the fourth NPC character image
 npc4_image = pygame.image.load(r"C:\Users\Admin\Pictures\txt\Transparent\mpjm_7eoy_210607_transparent.png")
 npc4_image = pygame.transform.scale(npc4_image, (npc4_image.get_width() // 16.5, npc4_image.get_height() // 16.5))
@@ -158,6 +160,12 @@ labels_rect_surface.set_alpha(225)  # Set the transparency of the rectangle (0-2
 labels_rect_x = WINDOW_SIZE[0] - labels_rect_width - 10
 labels_rect_y = 10
 
+# Define the image paths
+image_paths = [
+    r"C:\Users\Admin\Pictures\txt\Transparent\top-car-view-png-34868_transparent.png",
+    r"C:\Users\Admin\Pictures\txt\Transparent\top-car-view-png-34870_transparent.png"
+]
+
 def draw_store_menu():
     # Clear the store menu surface
     store_menu_surface = pygame.Surface(WINDOW_SIZE, pygame.SRCALPHA)
@@ -168,14 +176,29 @@ def draw_store_menu():
     title_rect = title_text.get_rect(center=(WINDOW_SIZE[0] // 2, WINDOW_SIZE[1] // 4))
     store_menu_surface.blit(title_text, title_rect)
 
-    # Load and display the image
-    image_path = r"C:\Users\Admin\Pictures\txt\Transparent\top-car-view-png-34868_transparent.png"
-    image = pygame.image.load(image_path)
-    image_rect = image.get_rect(center=(WINDOW_SIZE[0] // 2, WINDOW_SIZE[1] // 2))
-    store_menu_surface.blit(image, image_rect)
+    # Set the desired image size
+    image_size = (200, 200)  # Adjust the size as needed
+
+    # Calculate the total width of the images and spacing
+    total_width = len(image_paths) * image_size[0] + (len(image_paths) - 1) * 50  # 50 is the spacing between images
+
+    # Calculate the starting position for the images
+    start_x = (WINDOW_SIZE[0] - total_width) // 2
+
+    # Load and display the images
+    for i, image_path in enumerate(image_paths):
+        image = pygame.image.load(image_path)
+        image = pygame.transform.scale(image, image_size)
+        image_rect = image.get_rect(topleft=(start_x + i * (image_size[0] + 50), WINDOW_SIZE[1] // 2))
+        store_menu_surface.blit(image, image_rect)
+
+        # Draw a rectangle around the selected image
+        if selected_image == i:
+            pygame.draw.rect(store_menu_surface, (255, 255, 255), image_rect, 2)
 
     # Blit the store menu surface onto the main screen
     screen.blit(store_menu_surface, (0, 0))
+
 
 def draw_background():
     # Clear the screen
@@ -365,6 +388,7 @@ def draw_labels(score, lives, total_coins):
 
 
 # Game loop
+selected_image = 0
 running = True
 while running:
     # Handle events
@@ -387,17 +411,20 @@ while running:
                     respawn_rect = respawn_text.get_rect(center=(WINDOW_SIZE[0] // 2, WINDOW_SIZE[1] // 2))
                     screen.blit(respawn_text, respawn_rect)
                     pygame.display.flip()
-        elif event.type == pygame.MOUSEBUTTONDOWN and store_menu_open:
-            # Check if the image is clicked
-            if event.button == 1:  # Left mouse button
-                image_rect = pygame.Rect(WINDOW_SIZE[0] // 2 - npc1_image.get_width() // 2,
-                                         WINDOW_SIZE[1] // 2 - npc1_image.get_height() // 2,
-                                         npc1_image.get_width(), npc1_image.get_height())
-                if image_rect.collidepoint(event.pos):
-                    # Change the player's character to the clicked image
+            elif event.button == 0 and store_menu_open:  # X button (button index 0)
+                # Change the player's character to the selected image
+                if selected_image == 0:
                     player_image = npc1_image
                     player_mask = npc1_mask
                     player_width, player_height = player_image.get_size()
+                elif selected_image == 1:
+                    player_image = npc3_image
+                    player_mask = npc3_mask
+                    player_width, player_height = player_image.get_size()
+            elif event.button == 11 and store_menu_open:  # Left arrow button (button index 11)
+                selected_image = (selected_image - 1) % len(image_paths)
+            elif event.button == 12 and store_menu_open:  # Right arrow button (button index 12)
+                selected_image = (selected_image + 1) % len(image_paths)
 
     # Skip player movement and collision checks if waiting for respawn
     if waiting_for_respawn:
