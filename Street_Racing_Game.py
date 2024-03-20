@@ -347,6 +347,25 @@ def handle_npc_movement(score, npc_speeds, npc_positions, npc_heights, npc_width
 
     return score, npc_speeds, npc_positions
 
+def draw_labels(score, lives, total_coins):
+    # Clear the labels rectangle surface
+    labels_rect_surface.fill((128, 128, 128))  # Fill with gray color
+
+    # Draw the score on the labels rectangle surface
+    score_text = font.render(f"Score: {score}", True, (255, 255, 255))
+    labels_rect_surface.blit(score_text, (10, 10))
+
+    # Draw the lives on the labels rectangle surface
+    lives_text = font.render(f"Lives: {lives}", True, (255, 255, 255))
+    labels_rect_surface.blit(lives_text, (10, 40))
+
+    # Draw the total coins collected on the labels rectangle surface
+    total_coins_text = font.render(f"Coins: {total_coins}", True, (255, 255, 255))
+    labels_rect_surface.blit(total_coins_text, (10, 70))
+
+    # Blit the labels rectangle surface onto the main screen
+    screen.blit(labels_rect_surface, (labels_rect_x, labels_rect_y))
+
 
 # Game loop
 running = True
@@ -393,8 +412,7 @@ while running:
 
     # Handle player movement
     player_x, player_y, player_rotation, rotated_player_image, player_rect = handle_player_movement(
-        player_x, player_y, player_width, player_height, player_speed, player_rotation
-    )
+        player_x, player_y, player_width, player_height, player_speed, player_rotation)
 
 
     ###### NPC Movement ######################
@@ -454,8 +472,6 @@ while running:
     # Draw the background and lines
     draw_background()
 
-
-
     # Draw the rotated player character
     screen.blit(rotated_player_image, player_rect)
 
@@ -469,28 +485,8 @@ while running:
     if score >= 15:
         screen.blit(coin_image, (coin_x, coin_y))
 
-
-
-
-    ####### Score/Lives/Coins Label Creation#######################################
-
-    # Clear the labels rectangle surface
-    labels_rect_surface.fill((128, 128, 128))  # Fill with gray color
-
-    # Draw the score on the labels rectangle surface
-    score_text = font.render(f"Score: {score}", True, (255, 255, 255))
-    labels_rect_surface.blit(score_text, (10, 10))
-
-    # Draw the lives on the labels rectangle surface
-    lives_text = font.render(f"Lives: {lives}", True, (255, 255, 255))
-    labels_rect_surface.blit(lives_text, (10, 40))
-
-    # Draw the total coins collected on the labels rectangle surface
-    total_coins_text = font.render(f"Coins: {total_coins}", True, (255, 255, 255))
-    labels_rect_surface.blit(total_coins_text, (10, 70))
-
-    # Blit the labels rectangle surface onto the main screen
-    screen.blit(labels_rect_surface, (labels_rect_x, labels_rect_y))
+    # Draw the Score/Lives/Coins labels and grey rectangle
+    draw_labels(score, lives, total_coins)
 
 
     # Update the display
