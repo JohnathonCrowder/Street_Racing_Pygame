@@ -216,6 +216,91 @@ def reset_npc_positions():
     npc3_x = random.choice(wrap_positions)
     npc4_x = random.choice(npc4_wrap_positions)
 
+def check_collisions():
+    global lives, waiting_for_respawn, score, max_speed, coin_y, total_coins
+
+    # Create a list of NPCs and their corresponding collision offsets
+    npcs = [
+        (npc1_image, npc1_mask, npc1_x, npc1_y),
+        (npc2_image, npc2_mask, npc2_x, npc2_y),
+        (npc3_image, npc3_mask, npc3_x, npc3_y),
+        (npc4_image, npc4_mask, npc4_x, npc4_y)
+    ]
+
+    for npc_image, npc_mask, npc_x, npc_y in npcs:
+        offset_x = npc_x - player_x
+        offset_y = npc_y - player_y
+        collision = player_mask.overlap(npc_mask, (offset_x, offset_y))
+
+        if collision:
+            # Decrease the number of lives
+            lives -= 1
+
+            # Set the waiting for respawn flag
+            waiting_for_respawn = True
+
+            # Reset the positions of the NPCs
+            reset_npc_positions()
+
+            # Reset the score if no lives remain
+            if lives == 0:
+                score = 0
+                lives = 3  # Reset the lives to 3
+                max_speed = initial_max_speed  # Reset the maximum speed to the default
+
+            break  # Exit the loop if a collision is detected
+
+    # Check for collision with the coin only if the score is above 15
+    if score >= 15:
+        offset_coin_x = coin_x - player_x
+        offset_coin_y = coin_y - player_y
+        coin_collision = player_mask.overlap(coin_mask, (offset_coin_x, offset_coin_y))
+
+        if coin_collision:
+            # If the player collects the coin, move it off-screen
+            coin_y = WINDOW_SIZE[1] + coin_height
+            score += 1  # Increment the score when the coin is collected
+            total_coins += 1  # Increment the total coins collected
+
+def handle_player_movement(player_x, player_y, player_width, player_height, player_speed, player_rotation):
+
+    # Get the axis values (left stick)
+    x_axis = joystick.get_axis(0)
+    y_axis = joystick.get_axis(1)
+
+
+    # Apply the joystick threshold
+    if abs(x_axis) < JOYSTICK_THRESHOLD:
+        x_axis = 0
+    if abs(y_axis) < JOYSTICK_THRESHOLD:
+        y_axis = 0
+
+    # Move the player character based on the axis values
+    player_x += x_axis * player_speed
+    player_y += y_axis * player_speed
+
+    # Keep the player character within the window bounds
+    player_x = max(0, min(player_x, WINDOW_SIZE[0] - player_width))
+    player_y = max(0, min(player_y, WINDOW_SIZE[1] - player_height))
+
+    # Adjust the player's rotation based on the x-axis value
+    if x_axis < 0:
+        player_rotation = 15  # Rotate to the left
+    elif x_axis > 0:
+        player_rotation = -15  # Rotate to the right
+    else:
+        player_rotation = 0  # Return to the original rotation
+
+    # Rotate the player character
+    rotated_player_image = pygame.transform.rotate(player_image, player_rotation)
+
+    # Calculate the new position of the player character after rotation
+    player_rect = rotated_player_image.get_rect(center=(player_x + player_width // 2, player_y + player_height // 2))
+
+    return player_x, player_y, player_rotation, rotated_player_image, player_rect
+
+
+
 # Game loop
 running = True
 while running:
@@ -256,44 +341,20 @@ while running:
 
         continue
 
-    # Skip player movement and collision checks if waiting for respawn
-    if waiting_for_respawn:
-        continue
 
-    # Handle controller input
-    # Get the axis values (left stick)
-    x_axis = joystick.get_axis(0)
-    y_axis = joystick.get_axis(1)
+    ###### Player Movement #######################################
+
+    # Handle player movement
+    player_x, player_y, player_rotation, rotated_player_image, player_rect = handle_player_movement(
+        player_x, player_y, player_width, player_height, player_speed, player_rotation
+    )
+
+
+    ###### NPC Movement ######################
 
     # Get the trigger values
     left_trigger = joystick.get_axis(4)
     right_trigger = joystick.get_axis(5)
-
-    # Apply the joystick threshold
-    if abs(x_axis) < JOYSTICK_THRESHOLD:
-        x_axis = 0
-    if abs(y_axis) < JOYSTICK_THRESHOLD:
-        y_axis = 0
-
-    # Move the player character based on the axis values
-    player_x += x_axis * player_speed
-    player_y += y_axis * player_speed
-
-    # Keep the player character within the window bounds
-    player_x = max(0, min(player_x, WINDOW_SIZE[0] - player_width))
-    player_y = max(0, min(player_y, WINDOW_SIZE[1] - player_height))
-
-    # Adjust the player's rotation based on the x-axis value
-    if x_axis < 0:
-        player_rotation = 15  # Rotate to the left
-    elif x_axis > 0:
-        player_rotation = -15  # Rotate to the right
-    else:
-        player_rotation = 0  # Return to the original rotation
-
-    # Check if the score reaches a multiple of 50 and increase the max speed
-    if score > 0 and score % 50 == 0:
-        max_speed += 1
 
     # Adjust the NPCs' speeds based on the trigger input
     if right_trigger > 0:
@@ -336,6 +397,8 @@ while running:
         # If the score is below 3, set NPC2 off-screen
         npc2_y = WINDOW_SIZE[1] + npc2_height
 
+
+
     # Move NPC3 only if the score is above 20
     if score >= 20:
         # Before moving NPC3, check if it will collide with NPC1 or NPC2
@@ -357,10 +420,7 @@ while running:
         # If the score is below 20, set NPC3 off-screen
         npc3_y = WINDOW_SIZE[1] + npc3_height
 
-    # Check for collision between player and NPCs
-    offset_x1 = npc1_x - player_x
-    offset_y1 = npc1_y - player_y
-    collision1 = player_mask.overlap(npc1_mask, (offset_x1, offset_y1))
+
 
     # Move NPC4 only if the score is above 20
     if score > 20:
@@ -374,13 +434,6 @@ while running:
         # If the score is below 20, set NPC4 off-screen
         npc4_y = WINDOW_SIZE[1] + npc4_height
 
-    # Check for collision between player and NPC4 only if the score is above 20
-    if score > 20:
-        offset_x4 = npc4_x - player_x
-        offset_y4 = npc4_y - player_y
-        collision4 = player_mask.overlap(npc4_mask, (offset_x4, offset_y4))
-    else:
-        collision4 = False
 
     # Move the coin only if the score is above 15
     if score >= 15:
@@ -392,77 +445,18 @@ while running:
         # If the score is below 15, set the coin off-screen
         coin_y = WINDOW_SIZE[1] + coin_height
 
-    # Check for collision between player and coin only if the score is above 15
-    if score >= 15:
-        offset_coin_x = coin_x - player_x
-        offset_coin_y = coin_y - player_y
-        coin_collision = player_mask.overlap(coin_mask, (offset_coin_x, offset_coin_y))
 
-        if coin_collision:
-            # If the player collects the coin, move it off-screen
-            coin_y = WINDOW_SIZE[1] + coin_height
-            score += 1  # Increment the score when the coin is collected
-            total_coins += 1  # Increment the total coins collected
 
-    else:
-        coin_collision = False
 
-    # Check for collision with NPC2 only if the score is above 3
-    if score >= 5:
-        offset_x2 = npc2_x - player_x
-        offset_y2 = npc2_y - player_y
-        collision2 = player_mask.overlap(npc2_mask, (offset_x2, offset_y2))
-    else:
-        collision2 = False
+    ######## Drawing Game #######################################################
 
-    # Check for collision with NPC3 only if the score is above 20
-    if score >= 20:
-        offset_x3 = npc3_x - player_x
-        offset_y3 = npc3_y - player_y
-        collision3 = player_mask.overlap(npc3_mask, (offset_x3, offset_y3))
-    else:
-        collision3 = False
+    # Check for collisions
+    check_collisions()
 
-    if collision1 or collision2 or collision3 or collision4:
-        # Decrease the number of lives
-        lives -= 1
+    # Draw the background and lines
+    draw_background()
 
-        # Set the waiting for respawn flag
-        waiting_for_respawn = True
 
-        # Reset the positions of the NPCs
-        reset_npc_positions()
-
-        # Reset the score if no lives remain
-        if lives == 0:
-            score = 0
-            lives = 3  # Reset the lives to 3
-            max_speed = initial_max_speed  # Reset the maximum speed to the default
-
-    # Clear the screen
-    screen.fill((0, 0, 0))
-
-    # Clear left side green
-    screen.fill(grass_color, rect=(0, 0, WINDOW_SIZE[0]//5.4, WINDOW_SIZE[1]))
-
-    # Clear middle black
-    screen.fill((0, 0, 0), rect=(WINDOW_SIZE[0]//2, 0, WINDOW_SIZE[0]//2, WINDOW_SIZE[1]))
-
-    # Clear right side green
-    screen.fill(grass_color, rect=(WINDOW_SIZE[0]//1.1, 0, WINDOW_SIZE[0], WINDOW_SIZE[1]))
-
-    # Draw the lane lines
-    pygame.draw.line(screen, line_color, (left_lane_x, 0), (left_lane_x, WINDOW_SIZE[1]), 5)
-    pygame.draw.line(screen, line_color, (middle_lane_x, 0), (middle_lane_x, WINDOW_SIZE[1]), 5)
-    pygame.draw.line(screen, line_color, (right_lane_x, 0), (right_lane_x, WINDOW_SIZE[1]), 5)
-    rightmost_lane_x_adjusted = rightmost_lane_x - 30  # Adjust the rightmost_lane_x value
-    pygame.draw.line(screen, line_color, (rightmost_lane_x_adjusted, 0), (rightmost_lane_x_adjusted, WINDOW_SIZE[1]), 5)
-
-    # Rotate the player character
-    rotated_player_image = pygame.transform.rotate(player_image, player_rotation)
-
-    # Calculate the new position of the player character after rotation
-    player_rect = rotated_player_image.get_rect(center=(player_x + player_width // 2, player_y + player_height // 2))
 
     # Draw the rotated player character
     screen.blit(rotated_player_image, player_rect)
@@ -471,12 +465,16 @@ while running:
     screen.blit(npc1_image, (npc1_x, npc1_y))
     screen.blit(npc2_image, (npc2_x, npc2_y))
     screen.blit(npc3_image, (npc3_x, npc3_y))
-    # Draw the fourth NPC character
     screen.blit(npc4_image, (npc4_x, npc4_y))
 
     # Draw the coin only if the score is above 15
     if score >= 15:
         screen.blit(coin_image, (coin_x, coin_y))
+
+
+
+
+    ####### Score/Lives/Coins Label Creation#######################################
 
     # Clear the labels rectangle surface
     labels_rect_surface.fill((128, 128, 128))  # Fill with gray color
@@ -496,8 +494,10 @@ while running:
     # Blit the labels rectangle surface onto the main screen
     screen.blit(labels_rect_surface, (labels_rect_x, labels_rect_y))
 
+
     # Update the display
     pygame.display.flip()
+
 
 # Quit Pygame
 pygame.quit()
