@@ -168,14 +168,11 @@ def draw_store_menu():
     title_rect = title_text.get_rect(center=(WINDOW_SIZE[0] // 2, WINDOW_SIZE[1] // 4))
     store_menu_surface.blit(title_text, title_rect)
 
-    # Draw the store menu options (placeholder for now)
-    option1_text = font.render("Option 1", True, (255, 255, 255))
-    option1_rect = option1_text.get_rect(center=(WINDOW_SIZE[0] // 2, WINDOW_SIZE[1] // 2))
-    store_menu_surface.blit(option1_text, option1_rect)
-
-    option2_text = font.render("Option 2", True, (255, 255, 255))
-    option2_rect = option2_text.get_rect(center=(WINDOW_SIZE[0] // 2, WINDOW_SIZE[1] // 2 + 50))
-    store_menu_surface.blit(option2_text, option2_rect)
+    # Load and display the image
+    image_path = r"C:\Users\Admin\Pictures\txt\Transparent\top-car-view-png-34868_transparent.png"
+    image = pygame.image.load(image_path)
+    image_rect = image.get_rect(center=(WINDOW_SIZE[0] // 2, WINDOW_SIZE[1] // 2))
+    store_menu_surface.blit(image, image_rect)
 
     # Blit the store menu surface onto the main screen
     screen.blit(store_menu_surface, (0, 0))
@@ -390,6 +387,17 @@ while running:
                     respawn_rect = respawn_text.get_rect(center=(WINDOW_SIZE[0] // 2, WINDOW_SIZE[1] // 2))
                     screen.blit(respawn_text, respawn_rect)
                     pygame.display.flip()
+        elif event.type == pygame.MOUSEBUTTONDOWN and store_menu_open:
+            # Check if the image is clicked
+            if event.button == 1:  # Left mouse button
+                image_rect = pygame.Rect(WINDOW_SIZE[0] // 2 - npc1_image.get_width() // 2,
+                                         WINDOW_SIZE[1] // 2 - npc1_image.get_height() // 2,
+                                         npc1_image.get_width(), npc1_image.get_height())
+                if image_rect.collidepoint(event.pos):
+                    # Change the player's character to the clicked image
+                    player_image = npc1_image
+                    player_mask = npc1_mask
+                    player_width, player_height = player_image.get_size()
 
     # Skip player movement and collision checks if waiting for respawn
     if waiting_for_respawn:
