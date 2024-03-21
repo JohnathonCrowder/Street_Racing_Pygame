@@ -58,6 +58,9 @@ player_rotation = 0
 flashing_state = False
 
 
+road_line_offset = 0
+
+
 # Define the lane positions
 left_lane_x = WINDOW_SIZE[0] // 4 - npc1_width // 2
 middle_lane_x = WINDOW_SIZE[0] // 2 - npc1_width // 2
@@ -230,6 +233,8 @@ def draw_store_menu():
 
 
 def draw_background():
+    global road_line_offset
+
     # Clear the screen
     screen.fill((0, 0, 0))
 
@@ -242,12 +247,26 @@ def draw_background():
     # Clear right side green
     screen.fill(grass_color, rect=(WINDOW_SIZE[0]//1.1, 0, WINDOW_SIZE[0], WINDOW_SIZE[1]))
 
-    # Draw the lane lines
+    # Draw the solid lane lines
     pygame.draw.line(screen, line_color, (left_lane_x, 0), (left_lane_x, WINDOW_SIZE[1]), 5)
-    pygame.draw.line(screen, line_color, (middle_lane_x, 0), (middle_lane_x, WINDOW_SIZE[1]), 5)
-    pygame.draw.line(screen, line_color, (right_lane_x, 0), (right_lane_x, WINDOW_SIZE[1]), 5)
     rightmost_lane_x_adjusted = rightmost_lane_x - 30  # Adjust the rightmost_lane_x value
     pygame.draw.line(screen, line_color, (rightmost_lane_x_adjusted, 0), (rightmost_lane_x_adjusted, WINDOW_SIZE[1]), 5)
+
+    # Set the yellow color for the dotted lines
+    yellow_color = (255, 255, 0)
+
+    # Draw the dotted lane lines
+    dash_length = 40
+    dash_gap = 80
+    y = road_line_offset
+    while y < WINDOW_SIZE[1]:
+        pygame.draw.line(screen, yellow_color, (middle_lane_x, y), (middle_lane_x, y + dash_length), 5)
+        pygame.draw.line(screen, yellow_color, (right_lane_x, y), (right_lane_x, y + dash_length), 5)
+        y += dash_length + dash_gap
+
+    # Update the road line offset based on NPC1's speed if not waiting for respawn
+    if not waiting_for_respawn:
+        road_line_offset = (road_line_offset + npc1_speed) % (dash_length + dash_gap)
 
 
 def reset_npc_positions():
