@@ -74,6 +74,8 @@ npc3_x = random.randint(left_lane_x + npc3_width // 2, right_lane_x - npc3_width
 npc3_y = -npc3_height
 npc3_speed = 2
 
+high_scores = []
+
 
 store_menu_open = False
 
@@ -163,7 +165,8 @@ labels_rect_y = 10
 # Define the image paths
 image_paths = [
     r"C:\Users\Admin\Pictures\txt\Transparent\top-car-view-png-34868_transparent.png",
-    r"C:\Users\Admin\Pictures\txt\Transparent\top-car-view-png-34870_transparent.png"
+    r"C:\Users\Admin\Pictures\txt\Transparent\top-car-view-png-34870_transparent.png",
+    r"C:\Users\Admin\Pictures\txt\Transparent\top-car-view-png-34872.png"
 ]
 
 def draw_store_menu():
@@ -195,6 +198,16 @@ def draw_store_menu():
         # Draw a rectangle around the selected image
         if selected_image == i:
             pygame.draw.rect(store_menu_surface, (255, 255, 255), image_rect, 2)
+
+    # Display the high scores
+    high_scores_title = font.render("High Scores:", True, (255, 255, 255))
+    high_scores_title_rect = high_scores_title.get_rect(topleft=(50, 50))
+    store_menu_surface.blit(high_scores_title, high_scores_title_rect)
+
+    for i, score in enumerate(high_scores, start=1):
+        high_score_text = font.render(f"{i}. {score}", True, (255, 255, 255))
+        high_score_rect = high_score_text.get_rect(topleft=(50, 50 + i * 30))
+        store_menu_surface.blit(high_score_text, high_score_rect)
 
     # Blit the store menu surface onto the main screen
     screen.blit(store_menu_surface, (0, 0))
@@ -237,7 +250,7 @@ def reset_npc_positions():
     npc4_x = random.choice(npc4_wrap_positions)
 
 def check_collisions():
-    global lives, waiting_for_respawn, score, max_speed, coin_y, total_coins
+    global lives, waiting_for_respawn, score, max_speed, coin_y, total_coins, high_scores
 
     # Create a list of NPCs and their corresponding collision offsets
     npcs = [
@@ -262,8 +275,17 @@ def check_collisions():
             # Reset the positions of the NPCs
             reset_npc_positions()
 
-            # Reset the score if no lives remain
+            # Check for high scores and reset the score if no lives remain
             if lives == 0:
+                # Check if the current score is a new high score
+                if len(high_scores) < 3:
+                    high_scores.append(score)
+                    high_scores.sort(reverse=True)
+                elif score > min(high_scores):
+                    high_scores.append(score)
+                    high_scores.sort(reverse=True)
+                    high_scores = high_scores[:3]
+
                 score = 0
                 lives = 3  # Reset the lives to 3
                 max_speed = initial_max_speed  # Reset the maximum speed to the default
@@ -413,17 +435,13 @@ while running:
                     pygame.display.flip()
             elif event.button == 0 and store_menu_open:  # X button (button index 0)
                 # Change the player's character to the selected image
-                if selected_image == 0:
-                    player_image = npc1_image
-                    player_mask = npc1_mask
-                    player_width, player_height = player_image.get_size()
-                elif selected_image == 1:
-                    player_image = npc3_image
-                    player_mask = npc3_mask
-                    player_width, player_height = player_image.get_size()
-            elif event.button == 11 and store_menu_open:  # Left arrow button (button index 11)
+                player_image = pygame.image.load(image_paths[selected_image])
+                player_image = pygame.transform.scale(player_image, (player_image.get_width() // 5.9, player_image.get_height() // 2.9))
+                player_mask = pygame.mask.from_surface(player_image)
+                player_width, player_height = player_image.get_size()
+            elif event.button == 10 and store_menu_open:  # Left arrow button (button index 10)
                 selected_image = (selected_image - 1) % len(image_paths)
-            elif event.button == 12 and store_menu_open:  # Right arrow button (button index 12)
+            elif event.button == 11 and store_menu_open:  # Right arrow button (button index 11)
                 selected_image = (selected_image + 1) % len(image_paths)
 
     # Skip player movement and collision checks if waiting for respawn
@@ -522,6 +540,8 @@ while running:
 
     # Draw the Score/Lives/Coins labels and grey rectangle
     draw_labels(score, lives, total_coins)
+
+
 
 
     # Update the display
