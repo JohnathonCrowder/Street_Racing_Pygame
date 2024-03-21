@@ -121,6 +121,8 @@ score = 0
 
 total_coins = 0
 
+switch_cost = 20
+
 
 # Initialize the lives
 lives = 3
@@ -209,8 +211,16 @@ def draw_store_menu():
         high_score_rect = high_score_text.get_rect(topleft=(50, 50 + i * 30))
         store_menu_surface.blit(high_score_text, high_score_rect)
 
+    # Display the switch cost
+    switch_cost_text = font.render(f"Switch Cost: {switch_cost} coins", True, (255, 255, 255))
+    switch_cost_rect = switch_cost_text.get_rect(topleft=(50, WINDOW_SIZE[1] - 50))
+    store_menu_surface.blit(switch_cost_text, switch_cost_rect)
+
     # Blit the store menu surface onto the main screen
     screen.blit(store_menu_surface, (0, 0))
+
+    return store_menu_surface
+
 
 
 def draw_background():
@@ -434,11 +444,23 @@ while running:
                     screen.blit(respawn_text, respawn_rect)
                     pygame.display.flip()
             elif event.button == 0 and store_menu_open:  # X button (button index 0)
-                # Change the player's character to the selected image
-                player_image = pygame.image.load(image_paths[selected_image])
-                player_image = pygame.transform.scale(player_image, (player_image.get_width() // 5.9, player_image.get_height() // 2.9))
-                player_mask = pygame.mask.from_surface(player_image)
-                player_width, player_height = player_image.get_size()
+                if total_coins >= switch_cost:
+                    # Change the player's character to the selected image
+                    player_image = pygame.image.load(image_paths[selected_image])
+                    player_image = pygame.transform.scale(player_image, (player_image.get_width() // 5.9, player_image.get_height() // 2.9))
+                    player_mask = pygame.mask.from_surface(player_image)
+                    player_width, player_height = player_image.get_size()
+                    total_coins -= switch_cost  # Subtract the switch cost from the total coins
+                else:
+                    # Display a message when the player doesn't have enough coins
+                    store_menu_surface = draw_store_menu()  # Get the store_menu_surface from the function
+                    not_enough_coins_text = font.render("Not enough coins to switch characters!", True, (255, 0, 0))
+                    not_enough_coins_rect = not_enough_coins_text.get_rect(center=(WINDOW_SIZE[0] // 2, WINDOW_SIZE[1] - 50))
+                    store_menu_surface.blit(not_enough_coins_text, not_enough_coins_rect)
+                    screen.blit(store_menu_surface, (0, 0))  # Blit the store menu surface onto the main screen
+                    pygame.display.flip()
+                    pygame.time.delay(2000)  # Display the message for 2 seconds
+
             elif event.button == 10 and store_menu_open:  # Left arrow button (button index 10)
                 selected_image = (selected_image - 1) % len(image_paths)
             elif event.button == 11 and store_menu_open:  # Right arrow button (button index 11)
