@@ -55,6 +55,9 @@ player_y = WINDOW_SIZE[1] // 2 - player_height // 2
 # Set the player's initial rotation
 player_rotation = 0
 
+flashing_state = False
+
+
 # Define the lane positions
 left_lane_x = WINDOW_SIZE[0] // 4 - npc1_width // 2
 middle_lane_x = WINDOW_SIZE[0] // 2 - npc1_width // 2
@@ -199,7 +202,10 @@ def draw_store_menu():
 
         # Draw a rectangle around the selected image
         if selected_image == i:
-            pygame.draw.rect(store_menu_surface, (255, 255, 255), image_rect, 2)
+            if flashing_state:
+                pygame.draw.rect(store_menu_surface, (255, 255, 0), image_rect, 4)  # Bright yellow color when flashing
+            else:
+                pygame.draw.rect(store_menu_surface, (255, 255, 255), image_rect, 2)  # White color when not flashing
 
     # Display the high scores
     high_scores_title = font.render("High Scores:", True, (255, 255, 255))
@@ -418,6 +424,27 @@ def draw_labels(score, lives, total_coins):
     # Blit the labels rectangle surface onto the main screen
     screen.blit(labels_rect_surface, (labels_rect_x, labels_rect_y))
 
+def check_coin_npc_collision():
+    global coin_x, coin_y
+
+    # Create a list of NPCs and their positions
+    npcs = [
+        (npc1_image, npc1_x, npc1_y),
+        (npc2_image, npc2_x, npc2_y),
+        (npc3_image, npc3_x, npc3_y),
+        (npc4_image, npc4_x, npc4_y)
+    ]
+
+    for npc_image, npc_x, npc_y in npcs:
+        npc_rect = npc_image.get_rect(topleft=(npc_x, npc_y))
+        coin_rect = coin_image.get_rect(topleft=(coin_x, coin_y))
+
+        if npc_rect.colliderect(coin_rect):
+            # Respawn the coin at a new position
+            coin_x = random.choice(wrap_positions)
+            coin_y = -coin_height
+            break
+
 
 # Game loop
 selected_image = 0
@@ -451,6 +478,15 @@ while running:
                     player_mask = pygame.mask.from_surface(player_image)
                     player_width, player_height = player_image.get_size()
                     total_coins -= switch_cost  # Subtract the switch cost from the total coins
+                    flashing_state = True  # Set flashing_state to True when the X button is pressed
+                    store_menu_surface = draw_store_menu(flashing_state)  # Redraw the store menu with flashing_state
+                    screen.blit(store_menu_surface, (0, 0))  # Blit the store menu surface onto the main screen
+                    pygame.display.flip()
+                    pygame.time.delay(200)  # Display the flashing state for a short duration (e.g., 200ms)
+                    flashing_state = False  # Set flashing_state back to False
+                    store_menu_surface = draw_store_menu(flashing_state)  # Redraw the store menu without flashing_state
+                    screen.blit(store_menu_surface, (0, 0))  # Blit the store menu surface onto the main screen
+                    pygame.display.flip()
                 else:
                     # Display a message when the player doesn't have enough coins
                     store_menu_surface = draw_store_menu()  # Get the store_menu_surface from the function
@@ -532,6 +568,9 @@ while running:
         if coin_y > WINDOW_SIZE[1]:
             coin_x = random.choice(wrap_positions)
             coin_y = -coin_height
+
+        # Check for collision between the coin and NPCs
+        check_coin_npc_collision()
     else:
         # If the score is below 15, set the coin off-screen
         coin_y = WINDOW_SIZE[1] + coin_height
