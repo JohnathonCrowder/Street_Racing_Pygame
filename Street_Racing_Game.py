@@ -9,6 +9,11 @@ import pygame.mask
 # Initialize Pygame
 pygame.init()
 
+# Check if a controller is connected
+controller_connected = pygame.joystick.get_count() > 0
+
+
+
 # Set the window size
 WINDOW_SIZE = (1300, 1300)
 screen = pygame.display.set_mode(WINDOW_SIZE)
@@ -103,8 +108,13 @@ JOYSTICK_THRESHOLD = 0.2
 
 # Set up the PlayStation controller
 pygame.joystick.init()
-joystick = pygame.joystick.Joystick(0)
-joystick.init()
+#joystick = pygame.joystick.Joystick(0)
+#joystick.init()
+
+# Initialize the joystick if a controller is connected
+if controller_connected:
+    joystick = pygame.joystick.Joystick(0)
+    joystick.init()
 
 # Define the line colors
 line_color = (255, 255, 255)  # White color
@@ -177,7 +187,7 @@ image_paths = [
     r"C:\Users\Admin\Pictures\txt\Transparent\top-car-view-png-34872.png"
 ]
 
-def draw_store_menu():
+def draw_store_menu(flashing_state=False):
     # Clear the store menu surface
     store_menu_surface = pygame.Surface(WINDOW_SIZE, pygame.SRCALPHA)
     store_menu_surface.fill((0, 0, 0, 128))  # Semi-transparent black background
@@ -340,33 +350,40 @@ def check_collisions():
             total_coins += 1  # Increment the total coins collected
 
 def handle_player_movement(player_x, player_y, player_width, player_height, player_speed, player_rotation):
+    if controller_connected:
+        # Get the axis values (left stick)
+        x_axis = joystick.get_axis(0)
+        y_axis = joystick.get_axis(1)
 
-    # Get the axis values (left stick)
-    x_axis = joystick.get_axis(0)
-    y_axis = joystick.get_axis(1)
+        # Apply the joystick threshold
+        if abs(x_axis) < JOYSTICK_THRESHOLD:
+            x_axis = 0
+        if abs(y_axis) < JOYSTICK_THRESHOLD:
+            y_axis = 0
 
+        # Move the player character based on the axis values
+        player_x += x_axis * player_speed
+        player_y += y_axis * player_speed
+    else:
+        # Handle keyboard input
+        keys = pygame.key.get_pressed()
+        if keys[pygame.K_LEFT] or keys[pygame.K_a]:
+            player_x -= player_speed
+            player_rotation = 15  # Rotate to the left
+        elif keys[pygame.K_RIGHT] or keys[pygame.K_d]:
+            player_x += player_speed
+            player_rotation = -15  # Rotate to the right
+        else:
+            player_rotation = 0  # Return to the original rotation
 
-    # Apply the joystick threshold
-    if abs(x_axis) < JOYSTICK_THRESHOLD:
-        x_axis = 0
-    if abs(y_axis) < JOYSTICK_THRESHOLD:
-        y_axis = 0
-
-    # Move the player character based on the axis values
-    player_x += x_axis * player_speed
-    player_y += y_axis * player_speed
+        if keys[pygame.K_UP] or keys[pygame.K_w]:
+            player_y -= player_speed
+        elif keys[pygame.K_DOWN] or keys[pygame.K_s]:
+            player_y += player_speed
 
     # Keep the player character within the window bounds
     player_x = max(0, min(player_x, WINDOW_SIZE[0] - player_width))
     player_y = max(0, min(player_y, WINDOW_SIZE[1] - player_height))
-
-    # Adjust the player's rotation based on the x-axis value
-    if x_axis < 0:
-        player_rotation = 15  # Rotate to the left
-    elif x_axis > 0:
-        player_rotation = -15  # Rotate to the right
-    else:
-        player_rotation = 0  # Return to the original rotation
 
     # Rotate the player character
     rotated_player_image = pygame.transform.rotate(player_image, player_rotation)
@@ -377,8 +394,13 @@ def handle_player_movement(player_x, player_y, player_width, player_height, play
     return player_x, player_y, player_rotation, rotated_player_image, player_rect
 
 def handle_npc_movement(score, npc_speeds, npc_positions, npc_heights, npc_widths, wrap_positions, max_speed, speed_up_rate, slow_down_rate):
-    left_trigger = joystick.get_axis(4)
-    right_trigger = joystick.get_axis(5)
+    if controller_connected:
+        left_trigger = joystick.get_axis(4)
+        right_trigger = joystick.get_axis(5)
+    else:
+        keys = pygame.key.get_pressed()
+        left_trigger = keys[pygame.K_SPACE]  # Check if spacebar is pressed
+        right_trigger = keys[pygame.K_LSHIFT]  # Check if left shift key is pressed
 
     for i in range(len(npc_speeds)):
         if right_trigger > 0:
@@ -473,7 +495,53 @@ while running:
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
             running = False
-        elif event.type == pygame.JOYBUTTONDOWN:
+        elif event.type == pygame.KEYDOWN:
+            if event.key == pygame.K_RETURN and waiting_for_respawn and not store_menu_open:
+                # Respawn the player
+                player_x = WINDOW_SIZE[0] // 2 - player_width // 2
+                player_y = WINDOW_SIZE[1] // 2 - player_height // 2
+                waiting_for_respawn = False
+            elif event.key == pygame.K_SPACE and waiting_for_respawn:
+                # Toggle the store menu
+                store_menu_open = not store_menu_open
+                if not store_menu_open:
+                    # If the store menu is closed, redraw the background and respawn message
+                    draw_background()
+                    respawn_text = font.render("Press Enter to Respawn", True, (255, 255, 255))
+                    respawn_rect = respawn_text.get_rect(center=(WINDOW_SIZE[0] // 2, WINDOW_SIZE[1] // 2))
+                    screen.blit(respawn_text, respawn_rect)
+                    pygame.display.flip()
+            elif event.key == pygame.K_RETURN and store_menu_open:
+                if total_coins >= switch_cost:
+                    # Change the player's character to the selected image
+                    player_image = pygame.image.load(image_paths[selected_image])
+                    player_image = pygame.transform.scale(player_image, (player_image.get_width() // 5.9, player_image.get_height() // 2.9))
+                    player_mask = pygame.mask.from_surface(player_image)
+                    player_width, player_height = player_image.get_size()
+                    total_coins -= switch_cost  # Subtract the switch cost from the total coins
+                    flashing_state = True  # Set flashing_state to True when the Enter key is pressed
+                    store_menu_surface = draw_store_menu(flashing_state)  # Redraw the store menu with flashing_state
+                    screen.blit(store_menu_surface, (0, 0))  # Blit the store menu surface onto the main screen
+                    pygame.display.flip()
+                    pygame.time.delay(200)  # Display the flashing state for a short duration (e.g., 200ms)
+                    flashing_state = False  # Set flashing_state back to False
+                    store_menu_surface = draw_store_menu(flashing_state)  # Redraw the store menu without flashing_state
+                    screen.blit(store_menu_surface, (0, 0))  # Blit the store menu surface onto the main screen
+                    pygame.display.flip()
+                else:
+                    # Display a message when the player doesn't have enough coins
+                    store_menu_surface = draw_store_menu()  # Get the store_menu_surface from the function
+                    not_enough_coins_text = font.render("Not enough coins to switch characters!", True, (255, 0, 0))
+                    not_enough_coins_rect = not_enough_coins_text.get_rect(center=(WINDOW_SIZE[0] // 2, WINDOW_SIZE[1] - 50))
+                    store_menu_surface.blit(not_enough_coins_text, not_enough_coins_rect)
+                    screen.blit(store_menu_surface, (0, 0))  # Blit the store menu surface onto the main screen
+                    pygame.display.flip()
+                    pygame.time.delay(2000)  # Display the message for 2 seconds
+            elif (event.key == pygame.K_LEFT or event.key == pygame.K_a) and store_menu_open:
+                selected_image = (selected_image - 1) % len(image_paths)
+            elif (event.key == pygame.K_RIGHT or event.key == pygame.K_d) and store_menu_open:
+                selected_image = (selected_image + 1) % len(image_paths)
+        elif event.type == pygame.JOYBUTTONDOWN and controller_connected:
             if event.button == 8 and waiting_for_respawn and not store_menu_open:  # Start button (button index 7)
                 # Respawn the player
                 player_x = WINDOW_SIZE[0] // 2 - player_width // 2
@@ -515,7 +583,6 @@ while running:
                     screen.blit(store_menu_surface, (0, 0))  # Blit the store menu surface onto the main screen
                     pygame.display.flip()
                     pygame.time.delay(2000)  # Display the message for 2 seconds
-
             elif event.button == 10 and store_menu_open:  # Left arrow button (button index 10)
                 selected_image = (selected_image - 1) % len(image_paths)
             elif event.button == 11 and store_menu_open:  # Right arrow button (button index 11)
