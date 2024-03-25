@@ -180,6 +180,19 @@ labels_rect_surface.set_alpha(225)  # Set the transparency of the rectangle (0-2
 labels_rect_x = WINDOW_SIZE[0] - labels_rect_width - 10
 labels_rect_y = 10
 
+# Load the semi NPC image
+semi_image = pygame.image.load(r"C:\Users\Admin\Pictures\txt\Transparent\large-black-american-truck-with-trailer-type-dump-truck-transporting-bulk-cargo-white-background-3d-illustration_101266-6000 (1).png")
+semi_image = pygame.transform.scale(semi_image, (semi_image.get_width() // 0.8, semi_image.get_height() ))
+semi_mask = pygame.mask.from_surface(semi_image)
+
+# Get the semi's width and height
+semi_width, semi_height = semi_image.get_size()
+
+# Set the semi's initial position and speed
+semi_x = random.choice(wrap_positions)
+semi_y = -semi_height
+semi_speed = 2
+
 # Define the image paths
 image_paths = [
     r"C:\Users\Admin\Pictures\txt\Transparent\top-car-view-png-34868_transparent.png",
@@ -294,6 +307,7 @@ def reset_npc_positions():
     npc3_x = random.choice(wrap_positions)
     npc4_x = random.choice(npc4_wrap_positions)
 
+
 def check_collisions():
     global lives, waiting_for_respawn, score, max_speed, coin_y, total_coins, high_scores
 
@@ -302,7 +316,8 @@ def check_collisions():
         (npc1_image, npc1_mask, npc1_x, npc1_y),
         (npc2_image, npc2_mask, npc2_x, npc2_y),
         (npc3_image, npc3_mask, npc3_x, npc3_y),
-        (npc4_image, npc4_mask, npc4_x, npc4_y)
+        (npc4_image, npc4_mask, npc4_x, npc4_y),
+        (semi_image, semi_mask, semi_x, semi_y)  # Add the semi to the list of NPCs
     ]
 
     for npc_image, npc_mask, npc_x, npc_y in npcs:
@@ -349,6 +364,11 @@ def check_collisions():
             score += 1  # Increment the score when the coin is collected
             total_coins += 1  # Increment the total coins collected
 
+
+
+
+
+
 def handle_player_movement(player_x, player_y, player_width, player_height, player_speed, player_rotation):
     if controller_connected:
         # Get the axis values (left stick)
@@ -393,6 +413,11 @@ def handle_player_movement(player_x, player_y, player_width, player_height, play
 
     return player_x, player_y, player_rotation, rotated_player_image, player_rect
 
+
+
+
+
+
 def handle_npc_movement(score, npc_speeds, npc_positions, npc_heights, npc_widths, wrap_positions, max_speed, speed_up_rate, slow_down_rate):
     if controller_connected:
         left_trigger = joystick.get_axis(4)
@@ -414,13 +439,25 @@ def handle_npc_movement(score, npc_speeds, npc_positions, npc_heights, npc_width
         npc_height = npc_heights[i]
         npc_width = npc_widths[i]
 
-        if i == 0 or score >= 5:  # Move NPC1 always, move NPC2 only if score is above 5
+        if i == 0:  # Move NPC1 always
             npc_y += npc_speeds[i]
             if npc_y > WINDOW_SIZE[1]:
                 npc_x = random.choice(wrap_positions)
                 npc_y = -npc_height
                 score += 1
-        elif i == 2 and score >= 20:  # Move NPC3 only if score is above 20
+        elif i == 1 and score >= 20:  # Move NPC2 only if score is above 20
+            npc_y += npc_speeds[i]
+            if npc_y > WINDOW_SIZE[1]:
+                npc_x = random.choice(wrap_positions)
+                npc_y = -npc_height
+                score += 1
+        elif i == 2 and score >= 35:  # Move NPC3 only if score is above 35
+            npc_y += npc_speeds[i]
+            if npc_y > WINDOW_SIZE[1]:
+                npc_x = random.choice(wrap_positions)
+                npc_y = -npc_height
+                score += 1
+        elif i == 3 and score >= 50:  # Move semi only if score is above 50
             npc_y += npc_speeds[i]
             if npc_y > WINDOW_SIZE[1]:
                 npc_x = random.choice(wrap_positions)
@@ -438,13 +475,26 @@ def handle_npc_movement(score, npc_speeds, npc_positions, npc_heights, npc_width
             npc2_rect = pygame.Rect(npc_positions[j][0], npc_positions[j][1], npc_widths[j], npc_heights[j])
 
             if npc1_rect.colliderect(npc2_rect):
-                # Respawn only one of the colliding NPCs
-                if random.choice([True, False]):
+                # Give priority to the semi (index 3)
+                if i == 3:
+                    npc_positions[j] = (random.choice(wrap_positions), -npc_heights[j])
+                elif j == 3:
                     npc_positions[i] = (random.choice(wrap_positions), -npc_heights[i])
                 else:
-                    npc_positions[j] = (random.choice(wrap_positions), -npc_heights[j])
+                    # Respawn only one of the colliding NPCs (excluding the semi)
+                    if random.choice([True, False]):
+                        npc_positions[i] = (random.choice(wrap_positions), -npc_heights[i])
+                    else:
+                        npc_positions[j] = (random.choice(wrap_positions), -npc_heights[j])
 
     return score, npc_speeds, npc_positions
+
+
+
+
+
+
+
 
 def draw_labels(score, lives, total_coins):
     # Clear the labels rectangle surface
@@ -464,6 +514,12 @@ def draw_labels(score, lives, total_coins):
 
     # Blit the labels rectangle surface onto the main screen
     screen.blit(labels_rect_surface, (labels_rect_x, labels_rect_y))
+
+
+
+
+
+
 
 def check_coin_npc_collision():
     global coin_x, coin_y
@@ -614,13 +670,13 @@ while running:
 
     ###### NPC Movement ######################
 
-     # Handle NPC movement
+    # Handle NPC movement
     score, npc_speeds, npc_positions = handle_npc_movement(
         score,
-        [npc1_speed, npc2_speed, npc3_speed],
-        [(npc1_x, npc1_y), (npc2_x, npc2_y), (npc3_x, npc3_y)],
-        [npc1_height, npc2_height, npc3_height],
-        [npc1_width, npc2_width, npc3_width],  # Pass the NPC widths
+        [npc1_speed, npc2_speed, npc3_speed, semi_speed],
+        [(npc1_x, npc1_y), (npc2_x, npc2_y), (npc3_x, npc3_y), (semi_x, semi_y)],
+        [npc1_height, npc2_height, npc3_height, semi_height],
+        [npc1_width, npc2_width, npc3_width, semi_width],
         wrap_positions,
         max_speed,
         speed_up_rate,
@@ -630,8 +686,9 @@ while running:
     npc1_x, npc1_y = npc_positions[0]
     npc2_x, npc2_y = npc_positions[1]
     npc3_x, npc3_y = npc_positions[2]
+    semi_x, semi_y = npc_positions[3]
 
-    npc1_speed, npc2_speed, npc3_speed = npc_speeds
+    npc1_speed, npc2_speed, npc3_speed, semi_speed = npc_speeds
 
 
     #Tree Movement
@@ -680,6 +737,7 @@ while running:
     screen.blit(npc2_image, (npc2_x, npc2_y))
     screen.blit(npc3_image, (npc3_x, npc3_y))
     screen.blit(npc4_image, (npc4_x, npc4_y))
+    screen.blit(semi_image, (semi_x, semi_y))
 
     # Draw the coin only if the score is above 15
     if score >= 15:
